@@ -110,16 +110,30 @@ class ProcessingStrategy:
 
         def _remove_none_values(obj):
             """
-            Remove null from a dictionary-like obj or list.
+            Remove None values from dict-like objects and lists recursively.
             These can appear due to Dataset loading causing schema merge.
             See https://github.com/axolotl-ai-cloud/axolotl/pull/2909
             """
+            # Handle mapping-like objects
             if hasattr(obj, "items"):
-                return {
-                    k: _remove_none_values(v) for k, v in obj.items() if v is not None
-                }
+                cleaned = {}
+                for k, v in obj.items():
+                    if v is None:
+                        continue
+                    cleaned_value = _remove_none_values(v)
+                    cleaned[k] = cleaned_value
+                return cleaned
+
+            # Handle lists
             if isinstance(obj, list):
-                return [_remove_none_values(elem) for elem in obj]
+                cleaned_list = []
+                for elem in obj:
+                    if elem is None:
+                        continue
+                    cleaned_list.append(_remove_none_values(elem))
+                return cleaned_list
+
+            # Primitive values remain unchanged
             return obj
 
         processed_examples = []
