@@ -8,7 +8,7 @@ import pytest
 from transformers import AutoTokenizer
 
 from axolotl.utils.chat_templates import (
-    _CHAT_TEMPLATES,
+    CHAT_TEMPLATES as _CHAT_TEMPLATES,
     extract_chat_template_args,
     get_chat_template,
 )

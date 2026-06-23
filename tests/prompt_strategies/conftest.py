@@ -7,7 +7,17 @@ from datasets import Dataset
 from transformers import AutoTokenizer
 
 from axolotl.prompt_strategies.jinja_template_analyzer import JinjaTemplateAnalyzer
-from axolotl.utils.chat_templates import _CHAT_TEMPLATES
+try:
+    from axolotl.utils.chat_templates import _CHAT_TEMPLATES
+except (ImportError, ModuleNotFoundError, AttributeError):
+    # Some versions expose a public CHAT_TEMPLATES name instead of a private _CHAT_TEMPLATES.
+    # Fall back to importing the module and resolving an available attribute so tests can
+    # continue to reference _CHAT_TEMPLATES below.
+    from axolotl.utils import chat_templates as _chat_templates_module
+    if hasattr(_chat_templates_module, "CHAT_TEMPLATES"):
+        _CHAT_TEMPLATES = getattr(_chat_templates_module, "CHAT_TEMPLATES")
+    else:
+        _CHAT_TEMPLATES = getattr(_chat_templates_module, "_CHAT_TEMPLATES", {})
 
 from tests.hf_offline_utils import enable_hf_offline
 
