@@ -1,11 +1,13 @@
-# StableMax integration entry point
+"""StableMax integration entry point
 
-import torch
+This module provides the StableMax integration entry point for Axolotl.
+"""
 
 from axolotl.integrations.base import BasePlugin
 
 from .args import StableMaxArgs  # noqa: F401
 from .stablemax import stablemax_cross_entropy
+
 
 
 class StableMaxPlugin(BasePlugin):

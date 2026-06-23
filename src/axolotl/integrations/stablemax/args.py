@@ -1,3 +1,9 @@
+"""StableMax integration argument models.
+
+This module provides pydantic models for arguments used by the StableMax
+integration.
+"""
+
 from pydantic import BaseModel, Field
 
 
