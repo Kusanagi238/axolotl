@@ -7,12 +7,22 @@ except ImportError:
 from packaging.version import Version as V
 
 v = V(torch.__version__)
-cuda = str(torch.version.cuda)
+cuda = torch.version.cuda
 try:
     is_ampere = torch.cuda.get_device_capability()[0] >= 8
 except RuntimeError:
     is_ampere = False
-if cuda != "12.1" and cuda != "11.8" and cuda != "12.4":
+# Normalize cuda to a string and allow common minor/patch formats (e.g. "12.6" or "12.6.0").
+# Accept CUDA 11.8+ and CUDA 12.1+ (and any future majors > 12) instead of strict exact-string matches.
+cuda = str(cuda) if cuda is not None else "None"
+try:
+    parts = cuda.split('.')
+    major = int(parts[0])
+    minor = int(parts[1]) if len(parts) > 1 else 0
+    supported = (major > 12) or (major == 12 and minor >= 1) or (major == 11 and minor >= 8)
+except Exception:
+    supported = False
+if not supported:
     raise RuntimeError(f"CUDA = {cuda} not supported!")
 if v <= V("2.1.0"):
     raise RuntimeError(f"Torch = {v} too old!")
