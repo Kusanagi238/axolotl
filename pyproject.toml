@@ -19,10 +19,9 @@ Documentation = "https://docs.axolotl.ai/"
 Repository = "https://github.com/axolotl-ai-cloud/axolotl.git"
 
 [tool.setuptools_scm]
+fallback_version = "0.0.0"
+fallback_version = "0.0.0"
 
 [tool.setuptools]
-py-modules = ["setuptools_axolotl_dynamic_dependencies"]
+packages = { find = {} }
 include-package-data = true
-
-[tool.setuptools.cmdclass]
-build_py = "setuptools_axolotl_dynamic_dependencies.BuildPyCommand"
