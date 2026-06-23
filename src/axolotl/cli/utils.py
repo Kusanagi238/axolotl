@@ -16,7 +16,6 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
-    ProcessorMixin,
 )
 
 from axolotl.loaders import load_processor, load_tokenizer
@@ -302,18 +301,17 @@ def load_model_and_tokenizer(
 ) -> tuple[
     PreTrainedModel,
     PreTrainedTokenizer | PreTrainedTokenizerFast | Any,
-    ProcessorMixin | None,
 ]:
     """
-    Helper function for loading a model, tokenizer, and processor specified in the given `axolotl`
-    config.
+    Helper function for loading a model and tokenizer specified in the given `axolotl`
+    config. If the config is multimodal a processor will be loaded locally but not returned.
 
     Args:
         cfg: Dictionary mapping `axolotl` config keys to values.
         inference: Boolean denoting inference mode.
 
     Returns:
-        Tuple of (PreTrainedModel, PreTrainedTokenizer, ProcessorMixin).
+        Tuple of (PreTrainedModel, PreTrainedTokenizer).
     """
     LOG.info(f"loading tokenizer... {cfg.tokenizer_config or cfg.base_model_config}")
     tokenizer = load_tokenizer(cfg)
@@ -327,4 +325,5 @@ def load_model_and_tokenizer(
         LOG.info("loading processor...")
         processor = load_processor(cfg, tokenizer)
 
-    return model, tokenizer, processor
+    # Return only model and tokenizer to match callers that expect two values.
+    return model, tokenizer
