@@ -34,6 +34,16 @@ class TestTrain:
         self, train_base_cfg, monkeypatch, world_size, expected_batch_size
     ):
         monkeypatch.setenv("WORLD_SIZE", str(world_size))
+        # Ensure logging calls that pass main_process_only do not raise TypeError in older
+        # logging.Logger._log implementations. Some code may call logger with a
+        # main_process_only kwarg; wrap _log to silently drop it if present.
+        import logging
+        real_log = logging.Logger._log
+        def _log_with_main_process_only(self, level, msg, args, *a, **kw):
+            kw.pop("main_process_only", None)
+            return real_log(self, level, msg, args, *a, **kw)
+        monkeypatch.setattr(logging.Logger, "_log", _log_with_main_process_only)
+
         cfg = validate_config(train_base_cfg)
         normalize_config(cfg)
         assert cfg.batch_size == expected_batch_size
