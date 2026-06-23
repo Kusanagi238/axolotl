@@ -13,7 +13,7 @@ from axolotl.utils.logging import get_logger
 
 LOG = get_logger(__name__)
 
-from .fsdp import TiledMLPFSDP
+from .fsdp import TiledMLPFSDP  # noqa: E402  # pylint: disable=C0413
 
 
 def patch_tiled_mlp_distributed(
