@@ -55,7 +55,8 @@ def get_ptq_config(
                 group_size=group_size,
                 set_inductor_config=False,
             )
-        if weight_dtype == TorchIntDType.int8:
+        # Use the runtime name attribute to avoid mypy errors about accessing enum members on the type
+        if getattr(weight_dtype, "name", None) == "int8":
             if group_size is None:
                 raise ValueError(
                     "group_size must be specified for int8 weight only quantization"
@@ -63,7 +64,7 @@ def get_ptq_config(
             return Int8WeightOnlyConfig(
                 group_size=group_size,
             )
-        if weight_dtype == TorchIntDType.int4:
+        if getattr(weight_dtype, "name", None) == "int4":
             if group_size is None:
                 raise ValueError(
                     "group_size must be specified for int4 weight only quantization"
@@ -71,11 +72,11 @@ def get_ptq_config(
             return Int4WeightOnlyConfig(
                 group_size=group_size,
             )
-    if activation_dtype == TorchIntDType.int4 and weight_dtype == TorchIntDType.int4:
+    if getattr(activation_dtype, "name", None) == "int4" and getattr(weight_dtype, "name", None) == "int4":
         return Int4DynamicActivationInt4WeightConfig()
-    if activation_dtype == TorchIntDType.int8 and weight_dtype == TorchIntDType.int8:
+    if getattr(activation_dtype, "name", None) == "int8" and getattr(weight_dtype, "name", None) == "int8":
         return Int8DynamicActivationInt8WeightConfig()
-    if activation_dtype == TorchIntDType.int8 and weight_dtype == TorchIntDType.int4:
+    if getattr(activation_dtype, "name", None) == "int8" and getattr(weight_dtype, "name", None) == "int4":
         return Int8DynamicActivationInt4WeightConfig()
     raise ValueError(
         f"Invalid activation/weight dtype combination: {activation_dtype}/{weight_dtype}"
