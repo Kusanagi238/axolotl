@@ -917,10 +917,11 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_sample_packing_w_sdpa_bf16(cls, data):
-        is_sm_90: bool = (
-            data["capabilities"]
-            and data["capabilities"].get("compute_capability") == "sm_90"
-        )
+        if data is None:
+            return data
+
+        capabilities = data.get("capabilities") or {}
+        is_sm_90: bool = capabilities.get("compute_capability") == "sm_90"
         if (
             data.get("sample_packing")
             and data.get("sdp_attention")
@@ -939,6 +940,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_multigpu_unsloth(cls, data):
+        if data is None:
+            return data
+
         if (
             data.get("unsloth_lora_mlp")
             or data.get("unsloth_lora_qkv")
@@ -974,6 +978,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_auto_enable_lora_kernels(cls, data):
+        if data is None:
+            return data
+
         # Only proceed if using LoRA or QLoRA adapter
         if data.get("rl"):
             # RL trainers not tested so don't enable kernels by default
@@ -995,8 +1002,8 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
                 return data
 
             # Check multi-GPU compatibility
-            capabilities = data.get("capabilities")
-            is_multi_gpu = capabilities and capabilities.get("n_gpu", 0) > 1
+            capabilities = data.get("capabilities") or {}
+            is_multi_gpu = capabilities.get("n_gpu", 0) > 1
             is_fsdp = data.get("fsdp_config") is not None
             is_fsdp2 = is_fsdp and str(data.get("fsdp_version")) == "2"
 
@@ -1026,6 +1033,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_adopt_torch_version(cls, data):
+        if data is None:
+            return data
+
         if (data.get("optimizer") is not None) and ("adopt" in data.get("optimizer")):
             env_capabilities = data.get("env_capabilities", {})
             torch_version = env_capabilities.get("torch_version")
@@ -1044,6 +1054,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_flex_torch_version(cls, data):
+        if data is None:
+            return data
+
         if (data.get("flex_attention") is not None) and (data.get("flex_attention")):
             env_capabilities = data.get("env_capabilities", {})
             torch_version = env_capabilities.get("torch_version")
@@ -1062,6 +1075,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_torch_compile_auto(cls, data):
+        if data is None:
+            return data
+
         if data.get("torch_compile") == "auto":
             env_capabilities = data.get("env_capabilities", {})
             if env_capabilities.get("torch_version"):
@@ -1081,6 +1097,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_beta_and_trl_beta_match(cls, data):
+        if data is None:
+            return data
+
         if data.get("beta") and data.get("trl", {}).get("beta"):
             if data["beta"] != data["trl"]["beta"]:
                 raise ValueError("beta and trl.beta must match or one must be removed")
@@ -1100,6 +1119,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_qat_config(cls, data):
+        if data is None:
+            return data
+
         qat_cfg = data.get("qat", {})
         if not qat_cfg:
             return data
@@ -1129,6 +1151,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_fsdp_torch_version(cls, data):
+        if data is None:
+            return data
+
         env_capabilities = data.get("env_capabilities", {})
         torch_version = env_capabilities.get("torch_version")
 
@@ -1142,10 +1167,14 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
                 raise ValueError(
                     "FSDP2 and QAT are not supported on torch version < 2.7.0"
                 )
+        return data
 
     @model_validator(mode="before")
     @classmethod
     def check_fsdp_version(cls, data):
+        if data is None:
+            return data
+
         fsdp_config = data.get("fsdp_config", {})
         if fsdp_config and str(data.get("fsdp_version")) != "2":
             LOG.info(
@@ -1159,7 +1188,10 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_fsdp2_base_model_quant_ram_efficient_loading(cls, data):
-        fsdp_config = data.get("fsdp_config")
+        if data is None:
+            return data
+
+        fsdp_config = data.get("fsdp_config") or {}
         if fsdp_config and data.get("fsdp_version") == 2:
             if fsdp_config.get("cpu_ram_efficient_loading") and (
                 data.get("load_in_8bit") or data.get("load_in_4bit")
@@ -1173,6 +1205,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_fsdp2_base_model_quant_dpo(cls, data):
+        if data is None:
+            return data
+
         if data.get("fsdp_version") == 2 and data.get("rl") in [
             RLType.DPO,
             RLType.KTO,
@@ -1189,6 +1224,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_fsdp_version_in_fsdp_config(cls, data):
+        if data is None:
+            return data
+
         if fsdp_config := data.get("fsdp_config"):
             if fsdp_config.get("fsdp_version"):
                 LOG.warning(
@@ -1200,6 +1238,9 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def check_fsdp_config_kwargs_prefix(cls, data):
+        if data is None:
+            return data
+
         if fsdp_config := data.get("fsdp_config"):
             for key, _ in fsdp_config.items():
                 if key.startswith("fsdp_"):
@@ -1212,12 +1253,16 @@ class AxolotlConfigWCapabilities(AxolotlInputConfig):
     @model_validator(mode="before")
     @classmethod
     def default_dataloader_opts(cls, data):
+        if data is None:
+            return data
+
         if (
             data.get("dataloader_num_workers") is None
             and data.get("dataloader_pin_memory") is None
             and data.get("dataloader_prefetch_factor") is None
         ):
-            data["dataloader_num_workers"] = data.get("capabilities").get("n_gpu", 1)
+            capabilities = data.get("capabilities") or {}
+            data["dataloader_num_workers"] = capabilities.get("n_gpu", 1)
             data["dataloader_pin_memory"] = True
             data["dataloader_prefetch_factor"] = 256
 

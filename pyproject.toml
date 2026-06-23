@@ -19,10 +19,15 @@ Documentation = "https://docs.axolotl.ai/"
 Repository = "https://github.com/axolotl-ai-cloud/axolotl.git"
 
 [tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+write_to = "axolotl/_version.py"
+write_to_template = "__version__ = \"{version}\"\n"
 
 [tool.setuptools]
 py-modules = ["setuptools_axolotl_dynamic_dependencies"]
 include-package-data = true
+packages = ["axolotl"]
 
 [tool.setuptools.cmdclass]
 build_py = "setuptools_axolotl_dynamic_dependencies.BuildPyCommand"
