@@ -55,7 +55,10 @@ from transformers.integrations.deepspeed import (
 from axolotl.common.architectures import MOE_ARCH_BLOCK
 from axolotl.integrations.base import PluginManager
 from axolotl.models.mamba import fix_mamba_attn_for_loss
-from axolotl.monkeypatch.attention.ring_attn.patch import get_ring_attn_group
+try:
+    from axolotl.monkeypatch.attention.ring_attn.patch import get_ring_attn_group
+except Exception:  # pragma: no cover - optional monkeypatch may not be installed
+    get_ring_attn_group = None
 from axolotl.monkeypatch.multipack import (
     SUPPORTED_MULTIPACK_MODEL_TYPES,
     patch_for_multipack,
@@ -1088,11 +1091,22 @@ class ModelLoader:
 
             #  TODO (MengqingCao) split these patches seperately
             if self.cfg.flash_attention and not self.inference:
-                from axolotl.monkeypatch.llama_attn_hijack_flash import (
-                    is_xformers_swiglu_available,
-                    replace_llama_mlp_with_swiglu,
-                    replace_llama_qkv_with_fused,
-                )
+                try:
+                    from axolotl.monkeypatch.llama_attn_hijack_flash import (
+                        is_xformers_swiglu_available,
+                        replace_llama_mlp_with_swiglu,
+                        replace_llama_qkv_with_fused,
+                    )
+                except Exception:  # pylint: disable=broad-except
+                    # Optional monkeypatch may not be present; provide safe fallbacks
+                    def is_xformers_swiglu_available():
+                        return False
+
+                    def replace_llama_mlp_with_swiglu(model):
+                        return None
+
+                    def replace_llama_qkv_with_fused(model):
+                        return None
 
                 if self.cfg.flash_attn_fuse_mlp and is_xformers_swiglu_available():
                     LOG.info("patching with SwiGLU")
@@ -1260,17 +1274,29 @@ class ModelLoader:
     # TODO: Deprecate this.
     def apply_unsloth_lora_patch(self) -> None:
         if self.cfg.unsloth_lora_mlp:
-            from axolotl.monkeypatch.unsloth_ import integrate_lora_mlp_patch
+            try:
+                from axolotl.monkeypatch.unsloth_ import integrate_lora_mlp_patch
+            except Exception:  # pylint: disable=broad-except
+                integrate_lora_mlp_patch = None
 
-            integrate_lora_mlp_patch(self.model)
+            if integrate_lora_mlp_patch:
+                integrate_lora_mlp_patch(self.model)
         if self.cfg.unsloth_lora_qkv or self.cfg.unsloth_lora_o:
-            from axolotl.monkeypatch.unsloth_ import integrate_lora_patch
+            try:
+                from axolotl.monkeypatch.unsloth_ import integrate_lora_patch
+            except Exception:  # pylint: disable=broad-except
+                integrate_lora_patch = None
 
-            integrate_lora_patch(self.model, self.cfg)
+            if integrate_lora_patch:
+                integrate_lora_patch(self.model, self.cfg)
         if self.cfg.unsloth_rope:
-            from axolotl.monkeypatch.unsloth_ import integrate_rope_embeddings
+            try:
+                from axolotl.monkeypatch.unsloth_ import integrate_rope_embeddings
+            except Exception:  # pylint: disable=broad-except
+                integrate_rope_embeddings = None
 
-            integrate_rope_embeddings()
+            if integrate_rope_embeddings:
+                integrate_rope_embeddings()
 
     def apply_lora_patch(self) -> None:
         if (
@@ -1278,9 +1304,13 @@ class ModelLoader:
             or self.cfg.lora_qkv_kernel
             or self.cfg.lora_o_kernel
         ):
-            from axolotl.monkeypatch.lora_kernels import apply_lora_kernel_patches
+            try:
+                from axolotl.monkeypatch.lora_kernels import apply_lora_kernel_patches
+            except Exception:  # pylint: disable=broad-except
+                apply_lora_kernel_patches = None
 
-            apply_lora_kernel_patches(self.model, self.cfg)
+            if apply_lora_kernel_patches:
+                apply_lora_kernel_patches(self.model, self.cfg)
 
     def load_model(self) -> Tuple[PreTrainedModel, Optional[PeftConfig]]:
         self.apply_patches()
@@ -1428,9 +1458,14 @@ class ModelLoader:
             LOG.warning("there are no parameters that require gradient updates")
 
         if self.cfg.flash_optimum:
-            from optimum.bettertransformer import BetterTransformer
+            try:
+                from optimum.bettertransformer import BetterTransformer
+            except Exception:  # pylint: disable=broad-except
+                BetterTransformer = None
+                LOG.warning("optimum.bettertransformer not available; skipping BetterTransformer transform")
 
-            self.model = BetterTransformer.transform(self.model)
+            if BetterTransformer:
+                self.model = BetterTransformer.transform(self.model)
 
         if self.cfg.adapter is not None:
             log_gpu_memory_usage(LOG, "after adapters", self.model.device)

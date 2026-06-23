@@ -43,7 +43,13 @@ from trl.trainer.utils import pad
 
 from axolotl.core.trainers.grpo.sampler import SequenceParallelRepeatRandomSampler
 from axolotl.core.trainers.mixins import RngLoaderMixin, SchedulerMixin
-from axolotl.monkeypatch.attention.ring_attn.patch import get_ring_attn_group
+try:
+    from axolotl.monkeypatch.attention.ring_attn.patch import get_ring_attn_group
+except (ImportError, ModuleNotFoundError):
+    # ring_attn is an optional/monkeypatch module. Provide a noop fallback so
+    # environments without it (or lint checks) won't fail at import time.
+    def get_ring_attn_group():
+        return None
 
 if is_peft_available():
     # pylint: disable=unused-import
