@@ -14,7 +14,10 @@ from axolotl.utils.dict import DictDefault
 AXOLOTL_ROOT = Path(__file__).parent.parent.parent.parent
 
 
-@require_torch_2_6_0
+@pytest.mark.skipif(
+    tuple(map(int, torch.__version__.split(".")[:2])) < (2, 6),
+    reason="requires torch >= 2.6.0",
+)
 class TestFSDP2:
     """Test class for FSDP2 functionality."""
 
