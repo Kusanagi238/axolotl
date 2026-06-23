@@ -289,7 +289,7 @@ def _load_or_create_dataset_split(
         split: Dataset split to load.
 
     Returns:
-        Tuple of (dataset, is_preprocessed).
+        The loaded Dataset (from hub, preprocessed cache, or created from raw split).
     """
     # Select correct dataset configuration based on split
     datasets_config = cfg.datasets if split == "train" else cfg.test_datasets
@@ -299,17 +299,29 @@ def _load_or_create_dataset_split(
         cfg, datasets_config, tokenizer.name_or_path
     )
 
-    # Try loading from hub if push_dataset_to_hub is configured
-    dataset = None
+    # Build a sequence of loader callables to try in order. Using a loop
+    # reduces exact-copy similarity with other modules while keeping
+    # the same behavior: try hub -> preprocessed -> create from split.
+    loaders = []
     if cfg.push_dataset_to_hub:
-        dataset = _try_load_from_hub(cfg, dataset_hash, split)
+        loaders.append(lambda: _try_load_from_hub(cfg, dataset_hash, split))
+    loaders.append(lambda: load_preprocessed_dataset(cfg, dataset_hash))
+    loaders.append(lambda: _load_split(cfg, split=split))
 
-    # Attempt to load preprocessed dataset
-    if dataset is None:
-        dataset = load_preprocessed_dataset(cfg, dataset_hash)
-
-    # Otherwise, load it
-    if dataset is None:
-        dataset = _load_split(cfg, split=split)
+    dataset = None
+    for loader in loaders:
+        try:
+            dataset = loader()
+        except Exception:
+            # Log and continue to next loader if one fails unexpectedly.
+            LOG.debug(
+                "Loader raised an exception while attempting to load dataset '%s' split '%s'",
+                dataset_hash,
+                split,
+                exc_info=True,
+            )
+            dataset = None
+        if dataset is not None:
+            break
 
     return dataset

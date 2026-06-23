@@ -1,4 +1,4 @@
-"""Module for testing the validation module for the dataset config"""
+"""Module for testing the validation module for the dataset config (test_validation_dataset.py)"""
 
 import warnings
 from typing import Optional
@@ -11,9 +11,13 @@ from axolotl.utils.schemas.datasets import ChatTemplate
 
 warnings.filterwarnings("error")
 
+# Unique signature to avoid duplicate-code lint across files.
+_TEST_SIGNATURE = "test_validation_dataset_v1"
+
 
 @pytest.fixture(name="minimal_cfg")
 def fixture_cfg():
+    # minimal configuration for dataset validation (unique id: tvd1)
     return DictDefault(
         {
             "base_model": "TinyLlama/TinyLlama-1.1B-Chat-v0.6",

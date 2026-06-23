@@ -317,11 +317,14 @@ def _try_load_from_hub(
 
 
 def _generate_from_iterable_dataset(
-    dataset: IterableDataset, worker_id: list[int], num_workers: list[int]
+    dataset: IterableDataset, worker_id: int | list[int], num_workers: int | list[int]
 ) -> Generator[Any, None, None]:
     """Generator function to correctly split the dataset for each worker"""
+    # Support both int and single-element list/tuple forms (some DataLoader contexts pass lists)
+    wid = worker_id[0] if isinstance(worker_id, (list, tuple)) else worker_id
+    nworkers = num_workers[0] if isinstance(num_workers, (list, tuple)) else num_workers
     for i, item in enumerate(dataset):
-        if i % num_workers[0] == worker_id[0]:
+        if i % int(nworkers) == int(wid):
             yield item
 
 
